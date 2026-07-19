@@ -2,6 +2,17 @@
 
 Rust vulnerability scanner. More at `../Personal/rapiscm` sibling crate.
 
+## Language rules
+
+Use ASD-STE100 Simplified Technical English:
+- Use short sentences.
+- Use active voice and present tense.
+- Use one word for one meaning.
+- Put conditional clauses first.
+- Do not use -ing words.
+- Use articles (a, an, the).
+- Use simple verb forms.
+
 ## Quick start
 
 ```sh
