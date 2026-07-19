@@ -37,6 +37,18 @@ pub enum Command {
         /// Enable ghost mode (random UA, request jitter)
         #[arg(long)]
         ghost: bool,
+
+        /// Output in JSON format
+        #[arg(long)]
+        json: bool,
+
+        /// Paths to probe (comma-separated)
+        #[arg(long)]
+        paths: Option<String>,
+
+        /// Verbose output
+        #[arg(short = 'v')]
+        verbose: bool,
     },
 
     /// Run vulnerability checks against a target
@@ -48,15 +60,14 @@ pub enum Command {
         #[arg(long)]
         severity: Option<String>,
 
-        /// Output format (table|json|sarif)
+        /// Output format (table|json|sarif|html)
         #[arg(short = 'f', long, default_value = "table")]
         format: String,
 
         /// Output file
         #[arg(short = 'o', long)]
-        output: Option<String>
+        output: Option<String>,
 
-,
         /// Request timeout in seconds
         #[arg(long, default_value = "10")]
         timeout: u64,
@@ -80,6 +91,14 @@ pub enum Command {
         /// Enable ghost mode
         #[arg(long)]
         ghost: bool,
+
+        /// Paths to check (comma-separated)
+        #[arg(long)]
+        paths: Option<String>,
+
+        /// Verbose output
+        #[arg(short = 'v')]
+        verbose: bool,
     },
 
     /// Scan targets from a list file
@@ -88,7 +107,7 @@ pub enum Command {
         #[arg(short = 'l', long)]
         list: String,
 
-        /// Output format (table|json|sarif)
+        /// Output format (table|json|sarif|html)
         #[arg(short = 'f', long, default_value = "table")]
         format: String,
 
@@ -123,5 +142,9 @@ pub enum Command {
         /// Ghost mode
         #[arg(long)]
         ghost: bool,
+
+        /// Verbose output
+        #[arg(short = 'v')]
+        verbose: bool,
     },
 }
