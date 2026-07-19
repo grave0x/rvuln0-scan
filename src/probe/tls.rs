@@ -1,5 +1,5 @@
 use crate::types::TlsInfo;
-use crate::Error;
+use crate::error::Error;
 use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio_rustls::rustls::client::danger::{

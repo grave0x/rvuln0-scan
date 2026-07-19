@@ -258,9 +258,9 @@ fn stack_trace_exposure() -> Check {
             body_contains: Some(vec![
                 "stack trace".into(),
                 "exception stack".into(),
-                "at ".into(),
-                "in <module>".into(),
-                "file \"".into(),
+                "traceback".into(),
+                "call stack".into(),
+                "stacktrace".into(),
             ]),
             title_contains: None,
         },
@@ -317,7 +317,6 @@ fn php_info() -> Check {
             body_contains: Some(vec![
                 "php version".into(),
                 "php license".into(),
-                "php authors".into(),
                 "system info".into(),
             ]),
             title_contains: Some(vec!["phpinfo".into()]),

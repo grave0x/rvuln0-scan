@@ -1,5 +1,5 @@
 use crate::types::ProbeResult;
-use crate::Error;
+use crate::error::Error;
 use rand::seq::SliceRandom;
 use reqwest::header::{HeaderValue, USER_AGENT};
 use reqwest::Client;
