@@ -1,19 +1,24 @@
 pub mod matcher;
 pub mod builtin;
+pub mod loader;
 
-use crate::types::{Finding, ProbeResult, Severity};
+use crate::types::{Check, Finding, ProbeResult, Severity};
 
 /// Run all applicable checks against a probe result.
+/// extra_checks are loaded from YAML files at runtime.
 pub async fn run_checks(
     probe: &ProbeResult,
     min_severity: Option<Severity>,
+    extra_checks: &[Check],
 ) -> Vec<Finding> {
     let mut findings = Vec::new();
     let min = min_severity;
 
-    // Run matcher-based checks
-    let checks = builtin::all_checks();
-    for check in &checks {
+    // Run matcher-based checks (built-in + extra)
+    let mut combined = builtin::all_checks();
+    combined.extend_from_slice(extra_checks);
+
+    for check in &combined {
         if let Some(m) = min {
             if check.severity.rank() < m.rank() {
                 continue;

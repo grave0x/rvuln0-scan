@@ -100,6 +100,10 @@ pub enum Command {
         #[arg(long)]
         paths: Option<String>,
 
+        /// Path to YAML file with custom checks
+        #[arg(short = 'c', long)]
+        check_file: Option<String>,
+
         /// Verbose output
         #[arg(short = 'v')]
         verbose: bool,
@@ -146,6 +150,10 @@ pub enum Command {
         /// Ghost mode
         #[arg(long)]
         ghost: bool,
+
+        /// Path to YAML file with custom checks
+        #[arg(short = 'c', long)]
+        check_file: Option<String>,
 
         /// Verbose output
         #[arg(short = 'v')]

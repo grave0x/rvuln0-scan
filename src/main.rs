@@ -7,6 +7,7 @@ mod report;
 mod types;
 
 use clap::Parser;
+use check::loader::load_checks;
 use cli::{Cli, Command};
 use config::{load_config, parse_severity};
 use error::Error;
@@ -72,9 +73,10 @@ async fn main() {
             header,
             ghost,
             paths,
+            check_file,
             verbose,
         } => {
-            cmd_check(url, severity, &format, output, timeout, follow_redirects, insecure, proxy, &header, ghost, paths, verbose).await
+            cmd_check(url, severity, &format, output, timeout, follow_redirects, insecure, proxy, &header, ghost, paths, check_file, verbose).await
         }
         Command::Scan {
             list,
@@ -87,9 +89,10 @@ async fn main() {
             insecure,
             proxy,
             ghost,
+            check_file,
             verbose,
         } => {
-            cmd_scan(list, &format, output, threads, severity, timeout, rate_limit, insecure, proxy, ghost, verbose).await
+            cmd_scan(list, &format, output, threads, severity, timeout, rate_limit, insecure, proxy, ghost, check_file, verbose).await
         }
     };
 
@@ -186,11 +189,13 @@ async fn cmd_check(
     headers: &[String],
     ghost: bool,
     paths: Option<String>,
+    check_file: Option<String>,
     verbose: bool,
 ) -> Result<(), Error> {
     _ = verbose;
     let targets = expand_paths(&url, paths);
     let sev = parse_severity(severity.as_deref());
+    let extra = load_extra_checks(check_file);
     let mut all_findings = Vec::new();
 
     for target in &targets {
@@ -199,7 +204,7 @@ async fn cmd_check(
         }
         match probe_http(target, timeout, follow_redirects, insecure, proxy.as_deref(), headers, ghost, true).await {
             Ok(probe) => {
-                let findings = check::run_checks(&probe, sev).await;
+                let findings = check::run_checks(&probe, sev, &extra).await;
                 all_findings.extend(findings);
             }
             Err(e) => {
@@ -230,6 +235,7 @@ async fn cmd_scan(
     insecure: bool,
     proxy: Option<String>,
     ghost: bool,
+    check_file: Option<String>,
     verbose: bool,
 ) -> Result<(), Error> {
     let content = fs::read_to_string(&list).await.map_err(Error::Io)?;
@@ -246,6 +252,7 @@ async fn cmd_scan(
     log::info!("Scanning {} targets (threads={}, rate={}/s)", targets.len(), threads, rate_limit);
 
     let sev = parse_severity(severity.as_deref());
+    let extra = load_extra_checks(check_file);
     let semaphore = Arc::new(Semaphore::new(threads));
     let counter = Arc::new(AtomicUsize::new(0));
     let total = targets.len();
@@ -260,6 +267,7 @@ async fn cmd_scan(
         let permit = semaphore.clone().acquire_owned().await.unwrap();
         let proxy = proxy.clone();
         let counter = counter.clone();
+        let extra = extra.clone();
 
         if rate_delay > Duration::ZERO {
             sleep(rate_delay).await;
@@ -269,7 +277,7 @@ async fn cmd_scan(
             let _permit = permit;
             match probe_http(&target, timeout, true, insecure, proxy.as_deref(), &[], ghost, false).await {
                 Ok(probe) => {
-                    let findings = check::run_checks(&probe, sev).await;
+                    let findings = check::run_checks(&probe, sev, &extra).await;
                     let done = counter.fetch_add(1, Ordering::SeqCst) + 1;
                     if verbose || done.is_multiple_of(10) || done == total {
                         log::info!("Scan progress: {done}/{total}");
@@ -305,6 +313,23 @@ async fn cmd_scan(
         print!("{output_str}");
     }
     Ok(())
+}
+
+/// Load YAML checks from an optional file path.
+fn load_extra_checks(path: Option<String>) -> Vec<types::Check> {
+    match path {
+        Some(p) => match load_checks(&p) {
+            Ok(checks) => {
+                log::info!("Loaded {} custom check(s) from {p}", checks.len());
+                checks
+            }
+            Err(e) => {
+                log::error!("{e}");
+                vec![]
+            }
+        },
+        None => vec![],
+    }
 }
 
 /// Expand a base URL with additional paths for multi-path probing.
