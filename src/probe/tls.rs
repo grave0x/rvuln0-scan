@@ -12,7 +12,6 @@ use x509_parser::prelude::*;
 
 /// Extract TLS certificate data from a target host and port.
 /// This function accepts all server certificates.
-#[allow(dead_code)]
 pub async fn probe_tls(host: &str, port: u16) -> Result<Option<TlsInfo>, Error> {
     let addr = format!("{}:{}", host, port);
 
@@ -78,7 +77,6 @@ pub async fn probe_tls(host: &str, port: u16) -> Result<Option<TlsInfo>, Error> 
     }))
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 struct NoopVerifier;
 

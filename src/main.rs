@@ -7,6 +7,12 @@ mod report;
 mod types;
 
 use clap::Parser;
+
+/// Initialize the global TLS crypto provider.
+/// This must be called before any TLS operations.
+fn init_tls() {
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+}
 use cli::{Cli, Command};
 use config::parse_severity;
 use error::Error;
@@ -18,6 +24,7 @@ use tokio::sync::Semaphore;
 
 #[tokio::main]
 async fn main() {
+    init_tls();
     let cli = Cli::parse();
 
     let result = match cli.command {
@@ -109,6 +116,7 @@ async fn cmd_probe(
         proxy,
         headers,
         ghost,
+        true,
     )
     .await?;
     let tech = probe::tech::detect_tech(&result);
@@ -122,6 +130,23 @@ async fn cmd_probe(
     }
     if !tech.is_empty() {
         println!("Tech: {}", tech.join(", "));
+    }
+    if let Some(ref tls) = result.tls {
+        if let Some(ref issuer) = tls.issuer {
+            println!("TLS Issuer: {issuer}");
+        }
+        if let Some(ref subject) = tls.subject {
+            println!("TLS Subject: {subject}");
+        }
+        if let Some(ref nb) = tls.not_before {
+            println!("TLS Valid From: {nb}");
+        }
+        if let Some(ref na) = tls.not_after {
+            println!("TLS Valid Until: {na}");
+        }
+        if !tls.sans.is_empty() {
+            println!("TLS SANs: {}", tls.sans.join(", "));
+        }
     }
 
     Ok(())
@@ -148,6 +173,7 @@ async fn cmd_check(
         proxy,
         headers,
         ghost,
+        true,
     )
     .await?;
     let findings = check::run_checks(&probe, parse_severity(severity.as_deref())).await;
@@ -204,6 +230,7 @@ async fn cmd_scan(
                 proxy.as_deref(),
                 &[],
                 ghost,
+                false,
             )
             .await
             {

@@ -1,5 +1,6 @@
 use crate::types::ProbeResult;
 use crate::Error;
+use crate::probe::tls::probe_tls;
 use rand::seq::SliceRandom;
 use reqwest::header::{HeaderValue, USER_AGENT};
 use reqwest::Client;
@@ -76,8 +77,8 @@ fn normalize_url(raw: &str) -> String {
 
 /// Probe a single URL.
 /// Fetch headers and a body preview.
-/// Use client_opt to pass a shared client for connection reuse.
-/// If client_opt is None, a default client is used.
+/// If fetch_tls is true and the URL uses https, also get TLS certificate data.
+#[allow(clippy::too_many_arguments)]
 pub async fn probe_http(
     url: &str,
     timeout_secs: u64,
@@ -86,6 +87,7 @@ pub async fn probe_http(
     proxy: Option<&str>,
     extra_headers: &[String],
     ghost_mode: bool,
+    fetch_tls: bool,
 ) -> Result<ProbeResult, Error> {
     let url = normalize_url(url);
     if url.is_empty() {
@@ -134,14 +136,30 @@ pub async fn probe_http(
 
     let title = extract_title(&body_str);
 
+    let tls = if fetch_tls && url.starts_with("https://") {
+        let host = url
+            .trim_start_matches("https://")
+            .split('/')
+            .next()
+            .unwrap_or("")
+            .to_string();
+        if !host.is_empty() {
+            probe_tls(&host, 443).await.unwrap_or(None)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     if ghost_mode {
         let jitter_ms = rand::random::<u64>() % 500;
         sleep(Duration::from_millis(jitter_ms)).await;
     }
 
     Ok(ProbeResult {
-        target: url.to_string(),
-        url: url.to_string(),
+        target: url.clone(),
+        url,
         status_code,
         headers,
         body_preview: body_str,
@@ -149,7 +167,7 @@ pub async fn probe_http(
         response_time,
         title,
         tech: Vec::new(),
-        tls: None,
+        tls,
         error: None,
     })
 }
