@@ -23,6 +23,8 @@ pub fn all_checks() -> Vec<Check> {
         exposed_admin_panel(),
         php_info(),
         /* Cache / privacy */
+        cors_credentials(),
+        content_type_missing(),
         cache_control_missing(),
     ]
 }
@@ -315,6 +317,32 @@ fn php_info() -> Check {
                 "system info".into(),
             ]),
             title_contains: Some(vec!["phpinfo".into()]),
+        },
+    }
+}
+
+fn cors_credentials() -> Check {
+    Check {
+        id: "cors-credentials".into(),
+        name: "CORS with Credentials".into(),
+        severity: Severity::Medium,
+        description: "Access-Control-Allow-Credentials: true allows cookies with CORS.".into(),
+        matchers: Matchers {
+            status: None, header_present: Some(vec!["access-control-allow-credentials".into()]),
+            header_absent: None, body_regex: None, body_contains: None, title_contains: None,
+        },
+    }
+}
+
+fn content_type_missing() -> Check {
+    Check {
+        id: "content-type-missing".into(),
+        name: "Content-Type Header Missing".into(),
+        severity: Severity::Low,
+        description: "Response has no Content-Type header.".into(),
+        matchers: Matchers {
+            status: None, header_present: None, header_absent: Some(vec!["content-type".into()]),
+            body_regex: None, body_contains: None, title_contains: None,
         },
     }
 }

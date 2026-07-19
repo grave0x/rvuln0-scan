@@ -1,0 +1,121 @@
+# Example custom vulnerability checks for rvuln0-scan
+# Usage: rvuln0 check <url> -c custom-checks.yaml
+#
+# Each check has:
+#   id          - unique identifier
+#   name        - display name
+#   severity    - info / low / medium / high / critical
+#   description - explanation of the finding
+#   matchers    - conditions to match (all must pass)
+#     status          - list of HTTP status codes to match
+#     header_present  - headers that must exist
+#     header_absent   - headers that must NOT exist
+#     body_contains   - strings the body must contain (case-insensitive)
+#     title_contains  - strings the <title> must contain
+
+- id: exposed-actuator
+  name: Spring Boot Actuator Exposed
+  severity: high
+  description: Spring Boot actuator endpoints are exposed without authentication.
+  matchers:
+    body_contains:
+      - "_links"
+      - "actuator"
+
+- id: debug-mode-enabled
+  name: Debug Mode Enabled
+  severity: medium
+  description: Application debug mode is enabled, leaking sensitive information.
+  matchers:
+    header_present:
+      - "x-debug-token"
+      - "x-debug-token-link"
+
+- id: kubernetes-api-exposed
+  name: Kubernetes API Exposed
+  severity: critical
+  description: Kubernetes API server is accessible without authentication.
+  matchers:
+    body_contains:
+      - "kubernetes"
+      - "apiVersion"
+      - "kind"
+      - "kubectl"
+
+- id: aws-metadata-ssrf
+  name: AWS Metadata Service
+  severity: critical
+  description: AWS EC2 metadata service is accessible (potential SSRF).
+  matchers:
+    body_contains:
+      - "ami-id"
+      - "instance-id"
+      - "iam"
+      - "security-credentials"
+
+- id: exposed-prometheus
+  name: Prometheus Metrics Exposed
+  severity: medium
+  description: Prometheus metrics endpoint is exposed without authentication.
+  matchers:
+    body_contains:
+      - "go_goroutines"
+      - "promhttp_metric_handler_requests"
+      - "process_cpu_seconds_total"
+
+- id: elasticsearch-exposed
+  name: Elasticsearch Exposed
+  severity: high
+  description: Elasticsearch HTTP API is accessible without authentication.
+  matchers:
+    body_contains:
+      - "cluster_name"
+      - "cluster_uuid"
+      - "tagline"
+      - "You Know, for Search"
+
+- id: graphql-introspection
+  name: GraphQL Introspection Enabled
+  severity: medium
+  description: GraphQL introspection queries are enabled, allowing schema enumeration.
+  matchers:
+    body_contains:
+      - "__schema"
+      - "__type"
+      - "queryType"
+      - "mutationType"
+
+- id: docker-socket-exposed
+  name: Docker Socket Exposed
+  severity: critical
+  description: Docker socket is accessible via HTTP API.
+  matchers:
+    status:
+      - 200
+    body_contains:
+      - "Docker"
+      - "docker"
+      - "ApiVersion"
+      - "MinAPIVersion"
+
+- id: exposed-phpmyadmin
+  name: phpMyAdmin Exposed
+  severity: high
+  description: phpMyAdmin interface is exposed without authentication.
+  matchers:
+    title_contains:
+      - "phpMyAdmin"
+    body_contains:
+      - "phpMyAdmin"
+      - "pmadb"
+
+- id: default-nginx-error
+  name: Default Nginx Error Page
+  severity: low
+  description: Server displays default nginx error page, revealing software.
+  matchers:
+    title_contains:
+      - "nginx"
+    body_contains:
+      - "nginx/"
+      - "Server Error"
