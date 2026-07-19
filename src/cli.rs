@@ -112,6 +112,10 @@ pub enum Command {
         #[arg(long)]
         suppress_honeypot: bool,
 
+        /// Exit with code 1 if any finding meets this severity
+        #[arg(long)]
+        fail_on: Option<String>,
+
         /// Verbose output
         #[arg(short = 'v')]
         verbose: bool,
@@ -170,6 +174,10 @@ pub enum Command {
         /// Suppress findings flagged as honeypots
         #[arg(long)]
         suppress_honeypot: bool,
+
+        /// Exit with code 1 if any finding meets this severity
+        #[arg(long)]
+        fail_on: Option<String>,
 
         /// Verbose output
         #[arg(short = 'v')]
