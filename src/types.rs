@@ -81,6 +81,10 @@ pub struct Matchers {
     pub body_regex: Option<Vec<String>>,
     pub body_contains: Option<Vec<String>>,
     pub title_contains: Option<Vec<String>>,
+    /// Optional path to probe. If set, the scanner will request this path
+    /// and run matchers against the response. Example: "/.git/config"
+    #[serde(default)]
+    pub path: Option<String>,
 }
 
 /// Result of running a check against a target.

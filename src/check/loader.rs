@@ -20,6 +20,8 @@ struct YamlMatchers {
     body_regex: Option<Vec<String>>,
     body_contains: Option<Vec<String>>,
     title_contains: Option<Vec<String>>,
+    #[serde(default)]
+    path: Option<String>,
 }
 
 /// Load vulnerability checks from a YAML file.
@@ -51,6 +53,7 @@ pub fn load_checks(path: &str) -> Result<Vec<Check>, String> {
                 body_regex: yc.matchers.body_regex,
                 body_contains: yc.matchers.body_contains,
                 title_contains: yc.matchers.title_contains,
+                path: yc.matchers.path,
             },
         });
     }

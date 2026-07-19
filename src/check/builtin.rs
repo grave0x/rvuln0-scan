@@ -1,365 +1,164 @@
 use crate::types::{Check, Severity, Matchers};
 
-/// Returns built-in vulnerability checks.
+/// Helper to create Matchers.
+fn m(
+    status: Option<Vec<u16>>,
+    hp: Option<Vec<String>>,
+    ha: Option<Vec<String>>,
+    br: Option<Vec<String>>,
+    bc: Option<Vec<String>>,
+    tc: Option<Vec<String>>,
+    path: Option<&str>,
+) -> Matchers {
+    Matchers { status, header_present: hp, header_absent: ha, body_regex: br, body_contains: bc, title_contains: tc, path: path.map(|s| s.to_string()) }
+}
+
+/// Returns all built-in vulnerability checks.
 pub fn all_checks() -> Vec<Check> {
     vec![
-        /* Security header checks */
-        missing_security_headers(),
-        hsts_missing(),
-        csp_missing(),
-        xss_protection_missing(),
-        content_type_sniffing(),
-        referrer_policy_missing(),
-        permissions_policy_missing(),
-        cors_policy(),
-        coop_missing(),
-        /* Information disclosure */
-        server_banner(),
-        x_powered_by(),
-        email_disclosure(),
-        stack_trace_exposure(),
-        /* Content / config */
-        directory_listing(),
-        exposed_admin_panel(),
-        php_info(),
-        /* Cache / privacy */
-        cors_credentials(),
-        content_type_missing(),
-        cache_control_missing(),
+        security_headers(), hsts_missing(), csp_missing(), cors_wildcard(), cors_credentials(),
+        content_type_missing(), cache_control_missing(), referrer_policy_missing(),
+        permissions_policy_missing(), coop_missing(), xss_protection_missing(),
+        server_banner(), x_powered_by(), email_disclosure(), stack_trace(),
+        directory_listing(), exposed_admin(), php_info(),
+        git_config(), actuator_exposed(), s3_bucket(),
     ]
 }
 
-// ── Security header checks ──────────────────────────────────────
+fn c(id: &str, name: &str, sev: Severity, desc: &str, matchers: Matchers) -> Check {
+    Check { id: id.into(), name: name.into(), severity: sev, description: desc.into(), matchers }
+}
 
-fn missing_security_headers() -> Check {
-    Check {
-        id: "missing-security-headers".into(),
-        name: "Missing Security Headers".into(),
-        severity: Severity::Medium,
-        description: "Response missing X-Content-Type-Options or X-Frame-Options.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: Some(vec![
-                "x-content-type-options".into(),
-                "x-frame-options".into(),
-            ]),
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
+// ── Security header checks ──
+
+fn security_headers() -> Check {
+    c("missing-security-headers", "Missing Security Headers", Severity::Medium,
+      "Response missing X-Content-Type-Options or X-Frame-Options.",
+      m(None, None, Some(vec!["x-content-type-options".into(), "x-frame-options".into()]), None, None, None, None))
 }
 
 fn hsts_missing() -> Check {
-    Check {
-        id: "hsts-missing".into(),
-        name: "HSTS Missing".into(),
-        severity: Severity::Low,
-        description: "Strict-Transport-Security header not set. HTTPS sites should set HSTS to prevent SSL stripping.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: Some(vec!["strict-transport-security".into()]),
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
+    c("hsts-missing", "HSTS Missing", Severity::Low,
+      "Strict-Transport-Security header not set.",
+      m(None, None, Some(vec!["strict-transport-security".into()]), None, None, None, None))
 }
 
 fn csp_missing() -> Check {
-    Check {
-        id: "csp-missing".into(),
-        name: "CSP Not Set".into(),
-        severity: Severity::Low,
-        description: "Content-Security-Policy header missing — increases XSS risk.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: Some(vec!["content-security-policy".into()]),
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
+    c("csp-missing", "CSP Not Set", Severity::Low,
+      "Content-Security-Policy header missing.",
+      m(None, None, Some(vec!["content-security-policy".into()]), None, None, None, None))
 }
 
-fn xss_protection_missing() -> Check {
-    Check {
-        id: "xss-protection-missing".into(),
-        name: "X-XSS-Protection Missing".into(),
-        severity: Severity::Info,
-        description: "X-XSS-Protection header not set.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: Some(vec!["x-xss-protection".into()]),
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
-}
-
-fn content_type_sniffing() -> Check {
-    Check {
-        id: "content-type-sniffing".into(),
-        name: "MIME Sniffing Not Prevented".into(),
-        severity: Severity::Low,
-        description: "X-Content-Type-Options: nosniff missing — browser may sniff MIME types.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: Some(vec!["x-content-type-options".into()]),
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
-}
-
-fn referrer_policy_missing() -> Check {
-    Check {
-        id: "referrer-policy-missing".into(),
-        name: "Referrer-Policy Not Set".into(),
-        severity: Severity::Info,
-        description: "Referrer-Policy header missing — referrer info leaked on navigation.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: Some(vec!["referrer-policy".into()]),
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
-}
-
-fn permissions_policy_missing() -> Check {
-    Check {
-        id: "permissions-policy-missing".into(),
-        name: "Permissions-Policy Not Set".into(),
-        severity: Severity::Info,
-        description: "Permissions-Policy (Feature-Policy) header missing — browser features unrestricted.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: Some(vec!["permissions-policy".into(), "feature-policy".into()]),
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
-}
-
-fn cors_policy() -> Check {
-    Check {
-        id: "cors-wildcard".into(),
-        name: "CORS Allows All Origins".into(),
-        severity: Severity::Medium,
-        description: "Access-Control-Allow-Origin: * allows any site to read responses.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: Some(vec!["access-control-allow-origin".into()]),
-            header_absent: None,
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
-}
-
-fn coop_missing() -> Check {
-    Check {
-        id: "coop-missing".into(),
-        name: "Cross-Origin-Opener-Policy Missing".into(),
-        severity: Severity::Info,
-        description: "COOP header missing — cross-origin popups can access window references.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: Some(vec!["cross-origin-opener-policy".into()]),
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
-}
-
-// ── Information disclosure ──────────────────────────────────────
-
-fn server_banner() -> Check {
-    Check {
-        id: "server-banner".into(),
-        name: "Server Banner Exposed".into(),
-        severity: Severity::Info,
-        description: "Server header reveals software name/version.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: Some(vec!["server".into()]),
-            header_absent: None,
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
-}
-
-fn x_powered_by() -> Check {
-    Check {
-        id: "x-powered-by".into(),
-        name: "X-Powered-By Exposed".into(),
-        severity: Severity::Info,
-        description: "X-Powered-By header leaks framework/technology info.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: Some(vec!["x-powered-by".into()]),
-            header_absent: None,
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
-}
-
-fn email_disclosure() -> Check {
-    Check {
-        id: "email-disclosure".into(),
-        name: "Email Address Disclosure".into(),
-        severity: Severity::Low,
-        description: "Email address pattern found in response body.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: None,
-            body_regex: Some(vec![r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}".into()]),
-            body_contains: None,
-            title_contains: None,
-        },
-    }
-}
-
-fn stack_trace_exposure() -> Check {
-    Check {
-        id: "stack-trace".into(),
-        name: "Stack Trace Exposure".into(),
-        severity: Severity::High,
-        description: "Stack trace or exception details visible in response.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: None,
-            body_regex: None,
-            body_contains: Some(vec![
-                "stack trace".into(),
-                "exception stack".into(),
-                "at ".into(),
-                "in <module>".into(),
-                "file \"".into(),
-            ]),
-            title_contains: None,
-        },
-    }
-}
-
-// ── Content / config ────────────────────────────────────────────
-
-fn directory_listing() -> Check {
-    Check {
-        id: "directory-listing".into(),
-        name: "Directory Listing".into(),
-        severity: Severity::Medium,
-        description: "Directory listing may be enabled (Index of / pattern).".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: None,
-            body_regex: None,
-            body_contains: Some(vec!["index of /".into()]),
-            title_contains: None,
-        },
-    }
-}
-
-fn exposed_admin_panel() -> Check {
-    Check {
-        id: "exposed-admin".into(),
-        name: "Exposed Admin Panel".into(),
-        severity: Severity::High,
-        description: "Login/admin panel detected via body or title keywords.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: None,
-            body_regex: None,
-            body_contains: Some(vec!["admin".into(), "login".into()]),
-            title_contains: Some(vec!["admin".into(), "login".into()]),
-        },
-    }
-}
-
-fn php_info() -> Check {
-    Check {
-        id: "php-info-exposed".into(),
-        name: "PHP info() Exposed".into(),
-        severity: Severity::High,
-        description: "PHP phpinfo() output detected — leaks server configuration.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: None,
-            body_regex: None,
-            body_contains: Some(vec![
-                "php version".into(),
-                "php license".into(),
-                "php authors".into(),
-                "system info".into(),
-            ]),
-            title_contains: Some(vec!["phpinfo".into()]),
-        },
-    }
+fn cors_wildcard() -> Check {
+    c("cors-wildcard", "CORS Allows All Origins", Severity::Medium,
+      "Access-Control-Allow-Origin: * allows any site to read responses.",
+      m(None, Some(vec!["access-control-allow-origin".into()]), None, None, None, None, None))
 }
 
 fn cors_credentials() -> Check {
-    Check {
-        id: "cors-credentials".into(),
-        name: "CORS with Credentials".into(),
-        severity: Severity::Medium,
-        description: "Access-Control-Allow-Credentials: true allows cookies with CORS.".into(),
-        matchers: Matchers {
-            status: None, header_present: Some(vec!["access-control-allow-credentials".into()]),
-            header_absent: None, body_regex: None, body_contains: None, title_contains: None,
-        },
-    }
+    c("cors-credentials", "CORS with Credentials", Severity::Medium,
+      "Access-Control-Allow-Credentials: true allows cookies with CORS.",
+      m(None, Some(vec!["access-control-allow-credentials".into()]), None, None, None, None, None))
 }
 
 fn content_type_missing() -> Check {
-    Check {
-        id: "content-type-missing".into(),
-        name: "Content-Type Header Missing".into(),
-        severity: Severity::Low,
-        description: "Response has no Content-Type header.".into(),
-        matchers: Matchers {
-            status: None, header_present: None, header_absent: Some(vec!["content-type".into()]),
-            body_regex: None, body_contains: None, title_contains: None,
-        },
-    }
+    c("content-type-missing", "Content-Type Missing", Severity::Low,
+      "Response has no Content-Type header.",
+      m(None, None, Some(vec!["content-type".into()]), None, None, None, None))
 }
 
 fn cache_control_missing() -> Check {
-    Check {
-        id: "cache-control-missing".into(),
-        name: "Cache-Control Not Set".into(),
-        severity: Severity::Low,
-        description: "Cache-Control header missing — sensitive content may be cached.".into(),
-        matchers: Matchers {
-            status: None,
-            header_present: None,
-            header_absent: Some(vec!["cache-control".into()]),
-            body_regex: None,
-            body_contains: None,
-            title_contains: None,
-        },
-    }
+    c("cache-control-missing", "Cache-Control Not Set", Severity::Low,
+      "Cache-Control header missing.",
+      m(None, None, Some(vec!["cache-control".into()]), None, None, None, None))
+}
+
+fn referrer_policy_missing() -> Check {
+    c("referrer-policy-missing", "Referrer-Policy Not Set", Severity::Info,
+      "Referrer-Policy header missing.",
+      m(None, None, Some(vec!["referrer-policy".into()]), None, None, None, None))
+}
+
+fn permissions_policy_missing() -> Check {
+    c("permissions-policy-missing", "Permissions-Policy Not Set", Severity::Info,
+      "Permissions-Policy header missing.",
+      m(None, None, Some(vec!["permissions-policy".into(), "feature-policy".into()]), None, None, None, None))
+}
+
+fn coop_missing() -> Check {
+    c("coop-missing", "Cross-Origin-Opener-Policy Missing", Severity::Info,
+      "COOP header missing.",
+      m(None, None, Some(vec!["cross-origin-opener-policy".into()]), None, None, None, None))
+}
+
+fn xss_protection_missing() -> Check {
+    c("xss-protection-missing", "X-XSS-Protection Missing", Severity::Info,
+      "X-XSS-Protection header not set.",
+      m(None, None, Some(vec!["x-xss-protection".into()]), None, None, None, None))
+}
+
+// ── Information disclosure ──
+
+fn server_banner() -> Check {
+    c("server-banner", "Server Banner Exposed", Severity::Info,
+      "Server header reveals software name.",
+      m(None, Some(vec!["server".into()]), None, None, None, None, None))
+}
+
+fn x_powered_by() -> Check {
+    c("x-powered-by", "X-Powered-By Exposed", Severity::Info,
+      "X-Powered-By header leaks framework info.",
+      m(None, Some(vec!["x-powered-by".into()]), None, None, None, None, None))
+}
+
+fn email_disclosure() -> Check {
+    c("email-disclosure", "Email Disclosure", Severity::Low,
+      "Email pattern found in response body.",
+      m(None, None, None, Some(vec![r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}".into()]), None, None, None))
+}
+
+fn stack_trace() -> Check {
+    c("stack-trace", "Stack Trace Exposure", Severity::High,
+      "Stack trace visible in response.",
+      m(None, None, None, None, Some(vec!["stack trace".into(), "traceback".into(), "stacktrace".into(), "call stack".into()]), None, None))
+}
+
+// ── Content / config ──
+
+fn directory_listing() -> Check {
+    c("directory-listing", "Directory Listing", Severity::Medium,
+      "Directory listing enabled.",
+      m(None, None, None, None, Some(vec!["index of /".into()]), None, None))
+}
+
+fn exposed_admin() -> Check {
+    c("exposed-admin", "Exposed Admin Panel", Severity::High,
+      "Login/admin panel detected.",
+      m(None, None, None, None, Some(vec!["admin".into(), "login".into()]), Some(vec!["admin".into(), "login".into()]), None))
+}
+
+fn php_info() -> Check {
+    c("php-info-exposed", "PHP info() Exposed", Severity::High,
+      "phpinfo() output detected.",
+      m(None, None, None, None, Some(vec!["php version".into()]), Some(vec!["phpinfo".into()]), None))
+}
+
+// ── Path-based checks ──
+
+fn git_config() -> Check {
+    c("git-config-exposed", "Git Config Exposed", Severity::High,
+      ".git/config file is accessible.",
+      m(Some(vec![200]), None, None, None, Some(vec!["repositoryformatversion".into(), "ref:".into()]), None, Some("/.git/config")))
+}
+
+fn actuator_exposed() -> Check {
+    c("actuator-exposed", "Spring Actuator Exposed", Severity::High,
+      "Spring Boot actuator endpoint accessible without auth.",
+      m(Some(vec![200, 401, 403]), None, None, None, Some(vec!["_links".into()]), None, Some("/actuator")))
+}
+
+fn s3_bucket() -> Check {
+    c("s3-bucket-listing", "S3 Bucket Listing", Severity::High,
+      "S3 bucket listing is enabled.",
+      m(Some(vec![200]), None, None, None, Some(vec!["<listbucketresult".into(), "<contents>".into(), "key".into()]), None, Some("/")))
 }
