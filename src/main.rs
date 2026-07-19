@@ -11,7 +11,7 @@ use clap::Parser;
 use check::loader::load_checks;
 use cli::{Cli, Command};
 use fuzz::run_fuzz;
-use config::{load_config, parse_severity};
+use config::{load_config, parse_severity, FileConfig};
 use error::Error;
 use probe::probe_http;
 use report::format_findings;
@@ -35,18 +35,12 @@ async fn main() {
     let cli = Cli::parse();
 
     // Load config file if specified
-    if let Some(ref cfg_path) = cli.config {
-        match load_config(cfg_path) {
-            Ok(cfg) => {
-                for (k, v) in &cfg {
-                    log::debug!("Config: {k} = {v}");
-                }
-            }
-            Err(e) => {
-                log::error!("{e}");
-            }
+    let file_cfg: Option<FileConfig> = cli.config.as_ref().and_then(|p| {
+        match load_config(p) {
+            Ok(c) => { log::info!("Loaded config from {p}"); Some(c) }
+            Err(e) => { log::error!("{e}"); None }
         }
-    }
+    });
 
     let result = match cli.command {
         Command::Probe {
@@ -61,6 +55,10 @@ async fn main() {
             paths,
             verbose,
         } => {
+            let timeout = file_cfg.as_ref().and_then(|c| c.timeout).unwrap_or(timeout);
+            let insecure = file_cfg.as_ref().and_then(|c| c.insecure).unwrap_or(insecure);
+            let ghost = file_cfg.as_ref().and_then(|c| c.ghost).unwrap_or(ghost);
+            let proxy = file_cfg.as_ref().and_then(|c| c.proxy.clone()).or(proxy);
             cmd_probe(url, timeout, follow_redirects, insecure, proxy, &header, ghost, json, paths, verbose).await
         }
         Command::Check {
@@ -78,6 +76,11 @@ async fn main() {
             check_file,
             verbose,
         } => {
+            let timeout = file_cfg.as_ref().and_then(|c| c.timeout).unwrap_or(timeout);
+            let insecure = file_cfg.as_ref().and_then(|c| c.insecure).unwrap_or(insecure);
+            let ghost = file_cfg.as_ref().and_then(|c| c.ghost).unwrap_or(ghost);
+            let proxy = file_cfg.as_ref().and_then(|c| c.proxy.clone()).or(proxy);
+            let format = file_cfg.as_ref().and_then(|c| c.format.as_deref()).unwrap_or(&format);
             cmd_check(url, severity, &format, output, timeout, follow_redirects, insecure, proxy, &header, ghost, paths, check_file, verbose).await
         }
         Command::Fuzz {
@@ -88,6 +91,8 @@ async fn main() {
             status_filter,
             verbose,
         } => {
+            let timeout = file_cfg.as_ref().and_then(|c| c.timeout).unwrap_or(timeout);
+            let threads = file_cfg.as_ref().and_then(|c| c.threads).unwrap_or(threads);
             cmd_fuzz(url, threads, timeout, insecure, &status_filter, verbose).await
         }
 
@@ -105,6 +110,13 @@ async fn main() {
             check_file,
             verbose,
         } => {
+            let threads = file_cfg.as_ref().and_then(|c| c.threads).unwrap_or(threads);
+            let timeout = file_cfg.as_ref().and_then(|c| c.timeout).unwrap_or(timeout);
+            let rate_limit = file_cfg.as_ref().and_then(|c| c.rate_limit).unwrap_or(rate_limit);
+            let insecure = file_cfg.as_ref().and_then(|c| c.insecure).unwrap_or(insecure);
+            let proxy = file_cfg.as_ref().and_then(|c| c.proxy.clone()).or(proxy);
+            let ghost = file_cfg.as_ref().and_then(|c| c.ghost).unwrap_or(ghost);
+            let format = file_cfg.as_ref().and_then(|c| c.format.as_deref()).unwrap_or(&format);
             cmd_scan(list, &format, output, threads, severity, timeout, rate_limit, insecure, proxy, ghost, check_file, verbose).await
         }
     };
