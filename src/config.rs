@@ -11,7 +11,9 @@ pub struct FileConfig {
     pub ghost: Option<bool>,
     pub insecure: Option<bool>,
     pub format: Option<String>,
+    #[allow(dead_code)]
     pub severity: Option<String>,
+    #[allow(dead_code)]
     pub header: Option<Vec<String>>,
 }
 
@@ -31,6 +33,7 @@ pub fn load_config(path: &str) -> Result<FileConfig, String> {
     Ok(cfg)
 }
 
+#[allow(dead_code)]
 impl FileConfig {
     pub fn threads_or(&self, cli_threads: Option<usize>) -> usize {
         cli_threads.or(self.threads).unwrap_or(25)

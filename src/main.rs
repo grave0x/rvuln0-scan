@@ -81,7 +81,7 @@ async fn main() {
             let ghost = file_cfg.as_ref().and_then(|c| c.ghost).unwrap_or(ghost);
             let proxy = file_cfg.as_ref().and_then(|c| c.proxy.clone()).or(proxy);
             let format = file_cfg.as_ref().and_then(|c| c.format.as_deref()).unwrap_or(&format);
-            cmd_check(url, severity, &format, output, timeout, follow_redirects, insecure, proxy, &header, ghost, paths, check_file, verbose).await
+            cmd_check(url, severity, format, output, timeout, follow_redirects, insecure, proxy, &header, ghost, paths, check_file, verbose).await
         }
         Command::Fuzz {
             url,
@@ -117,7 +117,7 @@ async fn main() {
             let proxy = file_cfg.as_ref().and_then(|c| c.proxy.clone()).or(proxy);
             let ghost = file_cfg.as_ref().and_then(|c| c.ghost).unwrap_or(ghost);
             let format = file_cfg.as_ref().and_then(|c| c.format.as_deref()).unwrap_or(&format);
-            cmd_scan(list, &format, output, threads, severity, timeout, rate_limit, insecure, proxy, ghost, check_file, verbose).await
+            cmd_scan(list, format, output, threads, severity, timeout, rate_limit, insecure, proxy, ghost, check_file, verbose).await
         }
     };
 
