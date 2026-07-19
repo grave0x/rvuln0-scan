@@ -138,3 +138,28 @@ pub fn detect_tech(result: &crate::types::ProbeResult) -> Vec<String> {
 
     detected
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::ProbeResult;
+    use std::time::Duration;
+
+    fn probe_h(headers: Vec<(&str, &str)>, body: &str) -> ProbeResult {
+        ProbeResult {
+            target: "http://test.local".into(), url: "http://test.local".into(),
+            status_code: 200,
+            headers: headers.into_iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+            body_preview: body.to_string(), content_length: body.len(),
+            response_time: Duration::from_millis(10), title: None,
+            tech: vec![], tls: None, error: None,
+        }
+    }
+
+    #[test] fn test_nginx() { assert!(detect_tech(&probe_h(vec![("server", "nginx/1.20")], "")).contains(&"nginx".to_string())); }
+    #[test] fn test_apache() { assert!(detect_tech(&probe_h(vec![("server", "Apache/2.4")], "")).contains(&"Apache".to_string())); }
+    #[test] fn test_cloudflare() { assert!(detect_tech(&probe_h(vec![("server", "cloudflare")], "")).contains(&"Cloudflare".to_string())); }
+    #[test] fn test_wordpress() { assert!(detect_tech(&probe_h(vec![], "/wp-content/themes/theme/style.css")).contains(&"WordPress".to_string())); }
+    #[test] fn test_no_false() { assert!(detect_tech(&probe_h(vec![("server", "custom/1.0")], "hello world")).is_empty()); }
+    #[test] fn test_multiple() { let t = detect_tech(&probe_h(vec![("server", "nginx"), ("x-powered-by", "Express")], "/wp-content/")); assert!(t.contains(&"nginx".to_string())); assert!(t.contains(&"WordPress".to_string())); }
+}
