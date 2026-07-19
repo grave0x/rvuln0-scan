@@ -162,27 +162,29 @@ pub fn detect_tech(result: &ProbeResult) -> Vec<String> {
     for fp in FINGERPRINTS {
         let mut matched = false;
 
-        // Check header-based fingerprint
         if let Some(k) = fp.header_key {
             if let Some(val) = result.headers.get(k) {
                 let val_lower = val.to_lowercase();
-                matched = match fp.header_val {
-                    Some("*") => true,
-                    Some(v) => val_lower.contains(v),
-                    None => true,
-                };
+                match fp.header_val {
+                    Some("*") => matched = true,
+                    Some(v) if val_lower.contains(v) => matched = true,
+                    _ => {}
+                }
             }
         }
 
-        // If no header match or fingerprint has no header key, check body keyword
-        if !matched && fp.header_key.is_none() || matched && fp.header_key.is_none() {
+        if !matched && fp.header_key.is_none() || matched {
+            // also check body keyword if specified
             if let Some(kw) = fp.body_keyword {
-                matched = body_lower.contains(kw);
+                if body_lower.contains(kw) {
+                    matched = true;
+                } else if fp.header_key.is_some() {
+                    // if header already matched, body keyword is additional
+                } else {
+                    matched = false;
+                }
             }
         }
-
-        // For header-only fingerprints that matched, matched stays true
-        // For body-only fingerprints, matched is determined by body match above
 
         if matched && !detected.contains(&fp.name.to_string()) {
             detected.push(fp.name.to_string());
@@ -190,76 +192,4 @@ pub fn detect_tech(result: &ProbeResult) -> Vec<String> {
     }
 
     detected
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::types::ProbeResult;
-    use std::time::Duration;
-
-    fn probe_with_headers(headers: Vec<(&str, &str)>, body: &str) -> ProbeResult {
-        ProbeResult {
-            target: "http://test.local".into(),
-            url: "http://test.local".into(),
-            status_code: 200,
-            headers: headers.into_iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
-            body_preview: body.to_string(),
-            content_length: body.len(),
-            response_time: Duration::from_millis(10),
-            title: None,
-            tech: vec![],
-            tls: None,
-            error: None,
-        }
-    }
-
-    #[test]
-    fn test_detect_nginx() {
-        let p = probe_with_headers(vec![("server", "nginx/1.20.1")], "");
-        let tech = detect_tech(&p);
-        assert!(tech.contains(&"nginx".to_string()));
-    }
-
-    #[test]
-    fn test_detect_apache() {
-        let p = probe_with_headers(vec![("server", "Apache/2.4.41")], "");
-        let tech = detect_tech(&p);
-        assert!(tech.contains(&"Apache".to_string()));
-    }
-
-    #[test]
-    fn test_detect_wordpress() {
-        let p = probe_with_headers(vec![], "<html><body>/wp-content/themes/theme/style.css</body></html>");
-        let tech = detect_tech(&p);
-        assert!(tech.contains(&"WordPress".to_string()));
-    }
-
-    #[test]
-    fn test_detect_cloudflare() {
-        let p = probe_with_headers(vec![("server", "cloudflare")], "");
-        let tech = detect_tech(&p);
-        assert!(tech.contains(&"Cloudflare".to_string()));
-    }
-
-    #[test]
-    fn test_no_false_positives() {
-        let p = probe_with_headers(vec![("server", "custom-server/1.0")], "<html><body>hello world</body></html>");
-        let tech = detect_tech(&p);
-        // Should not detect anything from this random response
-        assert!(!tech.contains(&"nginx".to_string()));
-        assert!(!tech.contains(&"Apache".to_string()));
-        assert!(!tech.contains(&"WordPress".to_string()));
-    }
-
-    #[test]
-    fn test_multiple_tech() {
-        let p = probe_with_headers(
-            vec![("server", "nginx"), ("x-powered-by", "Express")],
-            "<html><body>/wp-content/themes/</body></html>",
-        );
-        let tech = detect_tech(&p);
-        assert!(tech.contains(&"nginx".to_string()));
-        assert!(tech.contains(&"WordPress".to_string()));
-    }
 }

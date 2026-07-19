@@ -1,36 +1,29 @@
 # rvuln0-scan
 
-Rust vulnerability scanner. More at `../Personal/rapiscm` sibling crate.
+Rust vulnerability scanner. Inspired by sibling project `Personal/rapiscm` (Rust API scanner with 8 subcommands, 60+ flags, browser support).
 
-## Language rules
+## Status
 
-Use ASD-STE100 Simplified Technical English:
-- Use short sentences.
-- Use active voice and present tense.
-- Use one word for one meaning.
-- Put conditional clauses first.
-- Do not use -ing words.
-- Use articles (a, an, the).
-- Use simple verb forms.
+Empty — new project. Plan + build from scratch.
 
 ## Quick start
 
 ```sh
 cargo build
 cargo test
-cargo clippy        # zero warnings
+cargo clippy        # must pass before commit
 cargo fmt           # format before diff
 ```
 
-## Conventions
+## Conventions (inherit from rapiscm)
 
 - CLI: `clap` derive macros
 - HTTP: `reqwest` with configurable timeouts
-- Errors: `thiserror`, propagate with context
+- Errors: `anyhow` / `thiserror`, propagate with context
 - Async: `tokio`
-- Minimize external deps — prefer std
+- Minimize external deps — prefer std (e.g. manual ANSI codes, `std::time`, `AtomicU64` IDs)
 
-## Module layout
+## Expected structure
 
 ```
 src/
@@ -39,9 +32,12 @@ src/
   config.rs         # scan config
   types.rs          # core types
   error.rs          # error enum
-  probe/            # HTTP + TLS + tech detection
-  check/            # vuln checks + matchers
+  scan/             # scan logic
+  check/            # vuln checks
   report/           # output formatters
-  ghost/            # evasion (UA, jitter)
-  filter/           # severity filtering
+  fuzz/             # optional fuzzing
 ```
+
+## Reference
+
+- `../Personal/rapiscm/` — sibling crate with similar patterns: module layout, CI workflow, feature-gated browser support

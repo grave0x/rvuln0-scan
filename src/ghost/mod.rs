@@ -16,9 +16,7 @@ const USER_AGENTS: &[&str] = &[
 
 /// Pick a random user agent.
 pub fn random_ua() -> &'static str {
-    USER_AGENTS
-        .choose(&mut rand::thread_rng())
-        .unwrap_or(&USER_AGENTS[0])
+    USER_AGENTS.choose(&mut rand::thread_rng()).unwrap_or(&USER_AGENTS[0])
 }
 
 /// Sleep for a random jitter duration (0-500ms).

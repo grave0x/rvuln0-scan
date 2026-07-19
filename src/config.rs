@@ -1,6 +1,7 @@
 use crate::types::{OutputFormat, ScanConfig, Severity};
 
-/// Build ScanConfig from raw CLI values.
+/// Build a ScanConfig from raw CLI values.
+/// This function is kept for future YAML config loading.
 #[allow(dead_code, clippy::too_many_arguments)]
 pub fn build_config(
     targets: Vec<String>,
@@ -50,4 +51,16 @@ pub fn build_config(
         output_format: fmt,
         severity_filter: sev,
     })
+}
+
+/// Parse a severity string into a Severity value.
+pub fn parse_severity(s: Option<&str>) -> Option<Severity> {
+    match s {
+        Some("info") => Some(Severity::Info),
+        Some("low") => Some(Severity::Low),
+        Some("medium") => Some(Severity::Medium),
+        Some("high") => Some(Severity::High),
+        Some("critical") => Some(Severity::Critical),
+        _ => None,
+    }
 }

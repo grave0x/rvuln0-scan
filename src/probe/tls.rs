@@ -1,5 +1,5 @@
 use crate::types::TlsInfo;
-use crate::error::Error;
+use crate::Error;
 use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio_rustls::rustls::client::danger::{
@@ -10,8 +10,8 @@ use tokio_rustls::rustls::{ClientConfig, DigitallySignedStruct, SignatureScheme}
 use tokio_rustls::TlsConnector;
 use x509_parser::prelude::*;
 
-/// Extract TLS certificate info from a target host:port.
-/// Uses custom verifier — accepts all certs (scanner needs to inspect bad certs).
+/// Extract TLS certificate data from a target host and port.
+/// This function accepts all server certificates.
 #[allow(dead_code)]
 pub async fn probe_tls(host: &str, port: u16) -> Result<Option<TlsInfo>, Error> {
     let addr = format!("{}:{}", host, port);

@@ -1,9 +1,10 @@
 use crate::types::ProbeResult;
-use crate::error::Error;
+use crate::Error;
 use rand::seq::SliceRandom;
 use reqwest::header::{HeaderValue, USER_AGENT};
 use reqwest::Client;
 use std::collections::HashMap;
+use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
@@ -21,7 +22,22 @@ fn pick_user_agent() -> &'static str {
         .unwrap_or(&DEFAULT_USER_AGENTS[0])
 }
 
-fn build_client(
+/// Get a shared default HTTP client.
+/// This client has connection pooling enabled.
+/// Use this for simple probes that do not need custom settings.
+pub fn default_client() -> &'static Client {
+    static CLIENT: OnceLock<Client> = OnceLock::new();
+    CLIENT.get_or_init(|| {
+        Client::builder()
+            .timeout(Duration::from_secs(10))
+            .redirect(reqwest::redirect::Policy::limited(10))
+            .build()
+            .expect("Default HTTP client must build")
+    })
+}
+
+/// Build a custom client for special configurations.
+pub fn build_client(
     timeout_secs: u64,
     follow_redirects: bool,
     insecure: bool,
@@ -44,7 +60,8 @@ fn build_client(
     Ok(builder.build()?)
 }
 
-/// Normalize a target URL — add scheme if missing, strip trailing junk.
+/// Normalize a target URL.
+/// Add https:// if no scheme is present.
 fn normalize_url(raw: &str) -> String {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
@@ -57,7 +74,10 @@ fn normalize_url(raw: &str) -> String {
     }
 }
 
-/// Probe a single URL: fetch headers + response body preview.
+/// Probe a single URL.
+/// Fetch headers and a body preview.
+/// Use client_opt to pass a shared client for connection reuse.
+/// If client_opt is None, a default client is used.
 pub async fn probe_http(
     url: &str,
     timeout_secs: u64,
@@ -71,7 +91,13 @@ pub async fn probe_http(
     if url.is_empty() {
         return Err(Error::InvalidTarget(url.to_string()));
     }
-    let client = build_client(timeout_secs, follow_redirects, insecure, proxy)?;
+
+    let use_default = timeout_secs == 10 && follow_redirects && !insecure && proxy.is_none();
+    let client = if use_default {
+        default_client().clone()
+    } else {
+        build_client(timeout_secs, follow_redirects, insecure, proxy)?
+    };
 
     let mut req = client.get(&url);
 
@@ -103,7 +129,8 @@ pub async fn probe_http(
 
     let body_bytes = resp.bytes().await.map_err(Error::Http)?;
     let content_length = body_bytes.len();
-    let body_str = String::from_utf8_lossy(&body_bytes[..content_length.min(512)]).to_string();
+    let body_str =
+        String::from_utf8_lossy(&body_bytes[..content_length.min(512)]).to_string();
 
     let title = extract_title(&body_str);
 
@@ -141,4 +168,38 @@ fn extract_title(body: &str) -> Option<String> {
         }
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_normalize_url_with_scheme() {
+        assert_eq!(normalize_url("https://example.com"), "https://example.com");
+    }
+
+    #[test]
+    fn test_normalize_url_without_scheme() {
+        let result = normalize_url("example.com");
+        assert!(result.starts_with("https://"));
+        assert!(result.contains("example.com"));
+    }
+
+    #[test]
+    fn test_normalize_url_trim() {
+        let result = normalize_url("  example.com  ");
+        assert!(result.starts_with("https://"));
+    }
+
+    #[test]
+    fn test_normalize_url_empty() {
+        assert_eq!(normalize_url(""), "");
+    }
+
+    #[test]
+    fn test_default_client_exists() {
+        let _c = default_client();
+        // The client builds without panic. This is the test.
+    }
 }
