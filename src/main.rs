@@ -2,6 +2,7 @@ mod check;
 mod cli;
 mod config;
 mod error;
+mod fuzz;
 mod probe;
 mod report;
 mod types;
@@ -9,6 +10,7 @@ mod types;
 use clap::Parser;
 use check::loader::load_checks;
 use cli::{Cli, Command};
+use fuzz::run_fuzz;
 use config::{load_config, parse_severity};
 use error::Error;
 use probe::probe_http;
@@ -78,6 +80,17 @@ async fn main() {
         } => {
             cmd_check(url, severity, &format, output, timeout, follow_redirects, insecure, proxy, &header, ghost, paths, check_file, verbose).await
         }
+        Command::Fuzz {
+            url,
+            threads,
+            timeout,
+            insecure,
+            status_filter,
+            verbose,
+        } => {
+            cmd_fuzz(url, threads, timeout, insecure, &status_filter, verbose).await
+        }
+
         Command::Scan {
             list,
             format,
@@ -312,6 +325,33 @@ async fn cmd_scan(
     } else {
         print!("{output_str}");
     }
+    Ok(())
+}
+
+async fn cmd_fuzz(
+    url: String,
+    threads: usize,
+    timeout: u64,
+    insecure: bool,
+    status_filter: &str,
+    verbose: bool,
+) -> Result<(), Error> {
+    let filter: Vec<u16> = status_filter
+        .split(',')
+        .filter_map(|s| s.trim().parse().ok())
+        .collect();
+
+    log::info!("Fuzzing {url} with {} paths (threads={})", fuzz::wordlist::WORDLIST.len(), threads);
+    if verbose {
+        log::info!("Status filter: {:?}", filter);
+    }
+
+    let findings = run_fuzz(&url, threads, timeout, insecure, filter).await?;
+
+    for f in &findings {
+        println!("[{}] {} — {}", f.severity.rank(), f.target, f.detail);
+    }
+    println!("Found {} path(s).", findings.len());
     Ok(())
 }
 

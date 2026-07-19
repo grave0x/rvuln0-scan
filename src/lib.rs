@@ -3,6 +3,7 @@ pub mod cli;
 pub mod config;
 pub mod error;
 pub mod filter;
+pub mod fuzz;
 pub mod ghost;
 pub mod probe;
 pub mod report;

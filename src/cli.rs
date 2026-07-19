@@ -159,4 +159,30 @@ pub enum Command {
         #[arg(short = 'v')]
         verbose: bool,
     },
+
+    /// Fuzz a target URL with a wordlist to discover hidden paths
+    Fuzz {
+        /// Target base URL
+        url: String,
+
+        /// Concurrency
+        #[arg(short = 't', long, default_value = "10")]
+        threads: usize,
+
+        /// Request timeout in seconds
+        #[arg(long, default_value = "5")]
+        timeout: u64,
+
+        /// Skip TLS verification
+        #[arg(short = 'k', long)]
+        insecure: bool,
+
+        /// Only show results matching these status codes (comma-separated)
+        #[arg(long, default_value = "200,201,204,301,302,307,401,403,405,500")]
+        status_filter: String,
+
+        /// Verbose output
+        #[arg(short = 'v')]
+        verbose: bool,
+    },
 }
