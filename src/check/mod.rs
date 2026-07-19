@@ -4,6 +4,47 @@ pub mod loader;
 
 use crate::types::{Check, Finding, ProbeResult, Severity};
 use crate::probe::probe_http;
+use std::collections::HashMap;
+
+/// Honeypot detection threshold: max matches before a target is flagged.
+#[allow(dead_code)]
+const HONEYPOT_THRESHOLD: usize = 15;
+
+/// Run checks with optional honeypot detection.
+#[allow(dead_code)]
+pub async fn run_checks_detailed(
+    probe: &ProbeResult,
+    min_severity: Option<Severity>,
+    extra_checks: &[Check],
+    honeypot_detect: bool,
+) -> (Vec<Finding>, bool) {
+    let findings = run_checks(probe, min_severity, extra_checks).await;
+    let is_honeypot = honeypot_detect && findings.len() >= HONEYPOT_THRESHOLD;
+    (findings, is_honeypot)
+}
+
+/// Track honeypot counts across a multi-target scan.
+#[allow(dead_code)]
+pub struct HoneypotTracker {
+    threshold: usize,
+    counts: HashMap<String, usize>,
+}
+
+#[allow(dead_code)]
+impl HoneypotTracker {
+    pub fn new(threshold: usize) -> Self {
+        Self { threshold, counts: HashMap::new() }
+    }
+    pub fn record(&mut self, target: &str, count: usize) {
+        self.counts.insert(target.to_string(), count);
+    }
+    pub fn is_honeypot(&self, target: &str) -> bool {
+        self.counts.get(target).copied().unwrap_or(0) >= self.threshold
+    }
+    pub fn flagged_targets(&self) -> Vec<String> {
+        self.counts.iter().filter(|(_, &c)| c >= self.threshold).map(|(t, _)| t.clone()).collect()
+    }
+}
 
 /// Run all applicable checks against a probe result.
 /// For checks with a `path` set, probes that path on the target.

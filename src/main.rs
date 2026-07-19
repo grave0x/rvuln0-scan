@@ -75,6 +75,7 @@ async fn main() {
             paths,
             check_file,
             verbose,
+            ..
         } => {
             let timeout = file_cfg.as_ref().and_then(|c| c.timeout).unwrap_or(timeout);
             let insecure = file_cfg.as_ref().and_then(|c| c.insecure).unwrap_or(insecure);
@@ -109,6 +110,7 @@ async fn main() {
             ghost,
             check_file,
             verbose,
+            ..
         } => {
             let threads = file_cfg.as_ref().and_then(|c| c.threads).unwrap_or(threads);
             let timeout = file_cfg.as_ref().and_then(|c| c.timeout).unwrap_or(timeout);

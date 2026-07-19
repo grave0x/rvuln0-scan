@@ -104,6 +104,14 @@ pub enum Command {
         #[arg(short = 'c', long)]
         check_file: Option<String>,
 
+        /// Enable honeypot detection (flags targets with many matches)
+        #[arg(long)]
+        honeypot_detect: bool,
+
+        /// Suppress findings flagged as honeypots
+        #[arg(long)]
+        suppress_honeypot: bool,
+
         /// Verbose output
         #[arg(short = 'v')]
         verbose: bool,
@@ -154,6 +162,14 @@ pub enum Command {
         /// Path to YAML file with custom checks
         #[arg(short = 'c', long)]
         check_file: Option<String>,
+
+        /// Enable honeypot detection
+        #[arg(long)]
+        honeypot_detect: bool,
+
+        /// Suppress findings flagged as honeypots
+        #[arg(long)]
+        suppress_honeypot: bool,
 
         /// Verbose output
         #[arg(short = 'v')]
