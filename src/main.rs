@@ -178,9 +178,16 @@ async fn cmd_probe(
             if let Some(ref title) = result.title {
                 println!("Title: {title}");
             }
-            if !tech.is_empty() {
-                println!("Tech: {}", tech.join(", "));
-            }
+    if !tech.is_empty() {
+        println!("Tech: {}", tech.join(", "));
+    }
+
+    // Check for WebSocket endpoints
+    if let Ok(ws_endpoints) = probe::ws::probe_ws(&result.url).await {
+        if !ws_endpoints.is_empty() {
+            println!("WebSocket: {}", ws_endpoints.join(", "));
+        }
+    }
             if let Some(ref tls) = result.tls {
                 if let Some(ref issuer) = tls.issuer {
                     println!("TLS Issuer: {issuer}");
