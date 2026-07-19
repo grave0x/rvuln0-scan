@@ -44,6 +44,19 @@ fn build_client(
     Ok(builder.build()?)
 }
 
+/// Normalize a target URL — add scheme if missing, strip trailing junk.
+fn normalize_url(raw: &str) -> String {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+    if !trimmed.starts_with("http://") && !trimmed.starts_with("https://") {
+        format!("https://{}", trimmed)
+    } else {
+        trimmed.to_string()
+    }
+}
+
 /// Probe a single URL: fetch headers + response body preview.
 pub async fn probe_http(
     url: &str,
@@ -54,9 +67,13 @@ pub async fn probe_http(
     extra_headers: &[String],
     ghost_mode: bool,
 ) -> Result<ProbeResult, Error> {
+    let url = normalize_url(url);
+    if url.is_empty() {
+        return Err(Error::InvalidTarget(url.to_string()));
+    }
     let client = build_client(timeout_secs, follow_redirects, insecure, proxy)?;
 
-    let mut req = client.get(url);
+    let mut req = client.get(&url);
 
     let ua = if ghost_mode {
         pick_user_agent()
