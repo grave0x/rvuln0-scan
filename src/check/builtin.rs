@@ -1,4 +1,4 @@
-use crate::types::{Check, Severity, Matchers};
+use crate::types::{Check, Matchers, Severity};
 
 /// Returns built-in vulnerability checks.
 pub fn all_checks() -> Vec<Check> {

@@ -18,7 +18,11 @@ pub fn build_config(
     let fmt = match output_format.as_deref() {
         Some("json") => OutputFormat::Json,
         Some("table") | None => OutputFormat::Table,
-        Some(other) => return Err(format!("Unknown output format: {other}. Use 'table' or 'json'.")),
+        Some(other) => {
+            return Err(format!(
+                "Unknown output format: {other}. Use 'table' or 'json'."
+            ))
+        }
     };
 
     let sev = match severity.as_deref() {

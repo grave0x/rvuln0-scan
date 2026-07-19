@@ -1,13 +1,10 @@
-pub mod matcher;
 pub mod builtin;
+pub mod matcher;
 
 use crate::types::{Finding, ProbeResult, Severity};
 
 /// Run all applicable checks against a probe result.
-pub async fn run_checks(
-    probe: &ProbeResult,
-    min_severity: Option<Severity>,
-) -> Vec<Finding> {
+pub async fn run_checks(probe: &ProbeResult, min_severity: Option<Severity>) -> Vec<Finding> {
     let checks = builtin::all_checks();
     let mut findings = Vec::new();
 

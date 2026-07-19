@@ -1,8 +1,8 @@
 use crate::types::ProbeResult;
 use crate::Error;
 use rand::seq::SliceRandom;
-use reqwest::Client;
 use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
+use reqwest::Client;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
@@ -21,7 +21,12 @@ fn pick_user_agent() -> &'static str {
         .unwrap_or(&DEFAULT_USER_AGENTS[0])
 }
 
-fn build_client(timeout_secs: u64, follow_redirects: bool, insecure: bool, proxy: Option<&str>) -> Result<Client, Error> {
+fn build_client(
+    timeout_secs: u64,
+    follow_redirects: bool,
+    insecure: bool,
+    proxy: Option<&str>,
+) -> Result<Client, Error> {
     let mut builder = Client::builder()
         .timeout(Duration::from_secs(timeout_secs))
         .danger_accept_invalid_certs(insecure);
@@ -31,7 +36,8 @@ fn build_client(timeout_secs: u64, follow_redirects: bool, insecure: bool, proxy
     }
 
     if let Some(p) = proxy {
-        let proxy = reqwest::Proxy::all(p).map_err(|_| Error::Parse(format!("Invalid proxy URL: {p}")))?;
+        let proxy =
+            reqwest::Proxy::all(p).map_err(|_| Error::Parse(format!("Invalid proxy URL: {p}")))?;
         builder = builder.proxy(proxy);
     }
 

@@ -1,10 +1,10 @@
+mod check;
 mod cli;
 mod config;
 mod error;
 mod filter;
 mod ghost;
 mod probe;
-mod check;
 mod report;
 mod types;
 
@@ -13,9 +13,9 @@ use cli::{Cli, Command};
 use error::Error;
 use probe::probe_http;
 use report::format_findings;
-use tokio::sync::Semaphore;
 use std::sync::Arc;
 use tokio::fs;
+use tokio::sync::Semaphore;
 
 #[tokio::main]
 async fn main() {
@@ -31,7 +31,16 @@ async fn main() {
             header,
             ghost,
         } => {
-            cmd_probe(url, timeout, follow_redirects, insecure, proxy.as_deref(), &header, ghost).await
+            cmd_probe(
+                url,
+                timeout,
+                follow_redirects,
+                insecure,
+                proxy.as_deref(),
+                &header,
+                ghost,
+            )
+            .await
         }
         Command::Check {
             url,
@@ -45,7 +54,19 @@ async fn main() {
             header,
             ghost,
         } => {
-            cmd_check(url, severity, &format, output, timeout, follow_redirects, insecure, proxy.as_deref(), &header, ghost).await
+            cmd_check(
+                url,
+                severity,
+                &format,
+                output,
+                timeout,
+                follow_redirects,
+                insecure,
+                proxy.as_deref(),
+                &header,
+                ghost,
+            )
+            .await
         }
         Command::Scan {
             list,
@@ -59,7 +80,10 @@ async fn main() {
             proxy,
             ghost,
         } => {
-            cmd_scan(list, &format, output, threads, severity, timeout, insecure, proxy, ghost).await
+            cmd_scan(
+                list, &format, output, threads, severity, timeout, insecure, proxy, ghost,
+            )
+            .await
         }
     };
 
@@ -78,7 +102,16 @@ async fn cmd_probe(
     headers: &[String],
     ghost: bool,
 ) -> Result<(), Error> {
-    let result = probe_http(&url, timeout, follow_redirects, insecure, proxy, headers, ghost).await?;
+    let result = probe_http(
+        &url,
+        timeout,
+        follow_redirects,
+        insecure,
+        proxy,
+        headers,
+        ghost,
+    )
+    .await?;
     let tech = probe::tech::detect_tech(&result);
 
     println!("URL: {}", result.url);
@@ -107,7 +140,16 @@ async fn cmd_check(
     headers: &[String],
     ghost: bool,
 ) -> Result<(), Error> {
-    let probe = probe_http(&url, timeout, follow_redirects, insecure, proxy, headers, ghost).await?;
+    let probe = probe_http(
+        &url,
+        timeout,
+        follow_redirects,
+        insecure,
+        proxy,
+        headers,
+        ghost,
+    )
+    .await?;
     let sev = severity.as_deref().and_then(|s| match s {
         "info" => Some(types::Severity::Info),
         "low" => Some(types::Severity::Low),
@@ -142,7 +184,11 @@ async fn cmd_scan(
     ghost: bool,
 ) -> Result<(), Error> {
     let content = fs::read_to_string(&list).await.map_err(Error::Io)?;
-    let targets: Vec<String> = content.lines().map(|l| l.trim().to_string()).filter(|l| !l.is_empty()).collect();
+    let targets: Vec<String> = content
+        .lines()
+        .map(|l| l.trim().to_string())
+        .filter(|l| !l.is_empty())
+        .collect();
 
     if targets.is_empty() {
         return Err(Error::NoTargets);
@@ -166,14 +212,22 @@ async fn cmd_scan(
 
         handles.push(tokio::spawn(async move {
             let _permit = permit;
-            match probe_http(&target, timeout, true, insecure, proxy.as_deref(), &[], ghost).await {
+            match probe_http(
+                &target,
+                timeout,
+                true,
+                insecure,
+                proxy.as_deref(),
+                &[],
+                ghost,
+            )
+            .await
+            {
                 Ok(probe) => {
                     let findings = check::run_checks(&probe, sev).await;
                     (target, findings)
                 }
-                Err(_e) => {
-                    (target, vec![])
-                }
+                Err(_e) => (target, vec![]),
             }
         }));
     }
