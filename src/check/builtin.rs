@@ -1,4 +1,4 @@
-use crate::types::{Check, Severity, Matchers};
+use crate::types::{Check, Matchers, Severity};
 
 /// Returns built-in vulnerability checks.
 pub fn all_checks() -> Vec<Check> {
@@ -105,7 +105,8 @@ fn content_type_sniffing() -> Check {
         id: "content-type-sniffing".into(),
         name: "MIME Sniffing Not Prevented".into(),
         severity: Severity::Low,
-        description: "X-Content-Type-Options: nosniff missing — browser may sniff MIME types.".into(),
+        description: "X-Content-Type-Options: nosniff missing — browser may sniff MIME types."
+            .into(),
         matchers: Matchers {
             status: None,
             header_present: None,
@@ -139,7 +140,9 @@ fn permissions_policy_missing() -> Check {
         id: "permissions-policy-missing".into(),
         name: "Permissions-Policy Not Set".into(),
         severity: Severity::Info,
-        description: "Permissions-Policy (Feature-Policy) header missing — browser features unrestricted.".into(),
+        description:
+            "Permissions-Policy (Feature-Policy) header missing — browser features unrestricted."
+                .into(),
         matchers: Matchers {
             status: None,
             header_present: None,
@@ -173,7 +176,8 @@ fn coop_missing() -> Check {
         id: "coop-missing".into(),
         name: "Cross-Origin-Opener-Policy Missing".into(),
         severity: Severity::Info,
-        description: "COOP header missing — cross-origin popups can access window references.".into(),
+        description: "COOP header missing — cross-origin popups can access window references."
+            .into(),
         matchers: Matchers {
             status: None,
             header_present: None,
@@ -231,7 +235,9 @@ fn email_disclosure() -> Check {
             status: None,
             header_present: None,
             header_absent: None,
-            body_regex: Some(vec![r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}".into()]),
+            body_regex: Some(vec![
+                r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}".into()
+            ]),
             body_contains: None,
             title_contains: None,
         },

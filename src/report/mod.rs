@@ -1,6 +1,6 @@
-pub mod table;
 pub mod json;
 pub mod sarif;
+pub mod table;
 
 use crate::types::Finding;
 

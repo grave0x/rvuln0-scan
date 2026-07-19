@@ -54,9 +54,7 @@ pub enum Command {
 
         /// Output file
         #[arg(short = 'o', long)]
-        output: Option<String>
-
-,
+        output: Option<String>,
         /// Request timeout in seconds
         #[arg(long, default_value = "10")]
         timeout: u64,
