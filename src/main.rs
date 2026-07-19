@@ -8,7 +8,7 @@ mod types;
 
 use clap::Parser;
 use cli::{Cli, Command};
-use config::parse_severity;
+use config::{load_config, parse_severity};
 use error::Error;
 use probe::probe_http;
 use report::format_findings;
@@ -30,6 +30,20 @@ async fn main() {
         .init();
 
     let cli = Cli::parse();
+
+    // Load config file if specified
+    if let Some(ref cfg_path) = cli.config {
+        match load_config(cfg_path) {
+            Ok(cfg) => {
+                for (k, v) in &cfg {
+                    log::debug!("Config: {k} = {v}");
+                }
+            }
+            Err(e) => {
+                log::error!("{e}");
+            }
+        }
+    }
 
     let result = match cli.command {
         Command::Probe {

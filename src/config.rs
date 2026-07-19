@@ -1,4 +1,5 @@
 use crate::types::{OutputFormat, ScanConfig, Severity};
+use std::collections::HashMap;
 
 /// Build a ScanConfig from raw CLI values.
 /// This function is kept for future YAML config loading.
@@ -20,13 +21,8 @@ pub fn build_config(
     let fmt = match output_format.as_deref() {
         Some("json") => OutputFormat::Json,
         Some("table") | None => OutputFormat::Table,
-        Some(other) => {
-            return Err(format!(
-                "Unknown output format: {other}. Use 'table' or 'json'."
-            ))
-        }
+        Some(other) => return Err(format!("Unknown output format: {other}")),
     };
-
     let sev = match severity.as_deref() {
         Some("info") => Some(Severity::Info),
         Some("low") => Some(Severity::Low),
@@ -63,4 +59,21 @@ pub fn parse_severity(s: Option<&str>) -> Option<Severity> {
         Some("critical") => Some(Severity::Critical),
         _ => None,
     }
+}
+
+/// Load default settings from a TOML config file.
+/// Returns a map of key-value pairs.
+pub fn load_config(path: &str) -> Result<HashMap<String, String>, String> {
+    let content = std::fs::read_to_string(path).map_err(|e| format!("Cannot read config: {e}"))?;
+    let parsed: HashMap<String, String> = content
+        .lines()
+        .filter(|l| l.contains('=') && !l.trim().starts_with('#'))
+        .filter_map(|l| {
+            let mut parts = l.splitn(2, '=');
+            let key = parts.next()?.trim().to_string();
+            let val = parts.next()?.trim().trim_matches('"').to_string();
+            Some((key, val))
+        })
+        .collect();
+    Ok(parsed)
 }

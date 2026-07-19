@@ -3,6 +3,10 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(name = "rvuln0", version, about = "Fast Rust vulnerability scanner")]
 pub struct Cli {
+    /// Path to TOML config file with default settings
+    #[arg(long, global = true)]
+    pub config: Option<String>,
+
     #[command(subcommand)]
     pub command: Command,
 }
