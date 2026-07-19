@@ -1,5 +1,6 @@
-pub mod json;
 pub mod table;
+pub mod json;
+pub mod sarif;
 
 use crate::types::Finding;
 
@@ -7,6 +8,7 @@ use crate::types::Finding;
 pub fn format_findings(findings: &[Finding], format: &str) -> String {
     match format {
         "json" => json::format_json(findings),
+        "sarif" => sarif::format_sarif(findings),
         _ => table::format_table(findings),
     }
 }

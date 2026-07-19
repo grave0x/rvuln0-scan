@@ -1,7 +1,7 @@
 use crate::types::ProbeResult;
 use crate::Error;
 use rand::seq::SliceRandom;
-use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
+use reqwest::header::{HeaderValue, USER_AGENT};
 use reqwest::Client;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};

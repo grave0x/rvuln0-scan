@@ -128,6 +128,7 @@ async fn cmd_probe(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn cmd_check(
     url: String,
     severity: Option<String>,
@@ -172,6 +173,7 @@ async fn cmd_check(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn cmd_scan(
     list: String,
     format: &str,

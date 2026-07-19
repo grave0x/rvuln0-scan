@@ -48,14 +48,15 @@ pub enum Command {
         #[arg(long)]
         severity: Option<String>,
 
-        /// Output format (table|json)
+        /// Output format (table|json|sarif)
         #[arg(short = 'f', long, default_value = "table")]
         format: String,
 
         /// Output file
         #[arg(short = 'o', long)]
-        output: Option<String>,
+        output: Option<String>
 
+,
         /// Request timeout in seconds
         #[arg(long, default_value = "10")]
         timeout: u64,
@@ -87,7 +88,7 @@ pub enum Command {
         #[arg(short = 'l', long)]
         list: String,
 
-        /// Output format (table|json)
+        /// Output format (table|json|sarif)
         #[arg(short = 'f', long, default_value = "table")]
         format: String,
 

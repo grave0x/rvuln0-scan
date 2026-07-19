@@ -2,6 +2,7 @@ use crate::types::ProbeResult;
 
 /// Technology fingerprint database.
 /// Each entry: name, header key to match, header value substring (or "*"), body keyword.
+#[allow(dead_code)]
 struct TechFingerprint {
     name: &'static str,
     category: &'static str,

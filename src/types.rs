@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 /// A scan target: URL, hostname, or IP.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Target {
     pub raw: String,
@@ -95,6 +96,7 @@ pub struct Finding {
 }
 
 /// Scan configuration.
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ScanConfig {
     pub targets: Vec<String>,
@@ -112,6 +114,7 @@ pub struct ScanConfig {
 }
 
 /// Supported output formats.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OutputFormat {
     Table,

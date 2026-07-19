@@ -1,6 +1,7 @@
 use crate::types::{OutputFormat, ScanConfig, Severity};
 
 /// Build ScanConfig from raw CLI values.
+#[allow(dead_code, clippy::too_many_arguments)]
 pub fn build_config(
     targets: Vec<String>,
     threads: Option<usize>,
