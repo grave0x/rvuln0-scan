@@ -92,6 +92,7 @@ fn test_report_table_format() {
         description: "desc".into(),
         detail: "detail".into(),
         timestamp: "now".into(),
+            risk_score: 0.0,
     }];
     let out = rvuln0_scan::format_findings_blocking(&findings, "table");
     assert!(out.contains("test"));
@@ -108,6 +109,7 @@ fn test_report_json_format() {
         description: "critical issue".into(),
         detail: "detail".into(),
         timestamp: "now".into(),
+            risk_score: 0.0,
     }];
     let out = rvuln0_scan::format_findings_blocking(&findings, "json");
     assert!(out.contains("json-test"));

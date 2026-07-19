@@ -97,6 +97,22 @@ pub struct Finding {
     pub description: String,
     pub detail: String,
     pub timestamp: String,
+    /// Numeric risk score 0.0–100.0. Higher = more severe.
+    #[serde(default)]
+    pub risk_score: f64,
+}
+
+impl Finding {
+    /// Calculate a risk score from severity level.
+    pub fn calc_risk_score(severity: &Severity) -> f64 {
+        match severity {
+            Severity::Critical => 90.0,
+            Severity::High => 65.0,
+            Severity::Medium => 40.0,
+            Severity::Low => 15.0,
+            Severity::Info => 5.0,
+        }
+    }
 }
 
 /// Scan configuration.

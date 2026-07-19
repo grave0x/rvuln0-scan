@@ -41,6 +41,7 @@ pub async fn run_fuzz(
                             description: "A path or file was discovered during fuzzing.".into(),
                             detail: format!("Status: {} ({} bytes)", result.status_code, result.content_length),
                             timestamp: chrono::Utc::now().to_rfc3339(),
+                            risk_score: Finding::calc_risk_score(&crate::types::Severity::Info),
                         })
                     } else {
                         None

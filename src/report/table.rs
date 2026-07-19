@@ -6,39 +6,19 @@ pub fn format_table(findings: &[Finding]) -> String {
         return "No findings.\n".to_string();
     }
 
-    let sev_width = 10;
-    let id_width = 30;
-    let desc_width = 50;
-    let sep = format!(
-        "{:-<1$}+{:-<2$}+{:-<3$}\n",
-        "",
-        sev_width + 2,
-        id_width + 2,
-        desc_width + 2
-    );
-
     let mut out = String::new();
     out.push_str(&format!(
-        " {:<width$} | {:<width2$} | {:<width3$}\n",
-        "Severity",
-        "Check ID",
-        "Target",
-        width = sev_width,
-        width2 = id_width,
-        width3 = desc_width
+        " {:<10} | {:<30} | {:<8} | {:<50}\n",
+        "Severity", "Check ID", "Risk", "Target"
     ));
-    out.push_str(&sep);
+    out.push_str(&format!("{:-<102}\n", ""));
 
     for f in findings {
         let sev_str = format!("{:?}", f.severity);
+        let risk_str = format!("{:.0}", f.risk_score);
         out.push_str(&format!(
-            " {:<sev$} | {:<id$} | {:<desc$}\n",
-            sev_str,
-            f.check_id,
-            f.target,
-            sev = sev_width,
-            id = id_width,
-            desc = desc_width
+            " {:<10} | {:<30} | {:>8} | {:<50}\n",
+            sev_str, f.check_id, risk_str, f.target
         ));
     }
 

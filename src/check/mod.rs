@@ -91,8 +91,9 @@ pub async fn run_checks(
                     severity: check.severity,
                     description: check.description.clone(),
                     detail: format!("Matched on {} ({})", probe.url, probe.status_code),
-                    timestamp: chrono::Utc::now().to_rfc3339(),
-                });
+                            timestamp: chrono::Utc::now().to_rfc3339(),
+                            risk_score: Finding::calc_risk_score(&Severity::High),
+                        });
             }
             continue;
         };
@@ -106,8 +107,9 @@ pub async fn run_checks(
                 severity: check.severity,
                 description: check.description.clone(),
                 detail: format!("Matched on {} ({})", target_probe.url, target_probe.status_code),
-                timestamp: chrono::Utc::now().to_rfc3339(),
-            });
+                            timestamp: chrono::Utc::now().to_rfc3339(),
+                            risk_score: Finding::calc_risk_score(&Severity::Low),
+                        });
         }
     }
 
@@ -120,6 +122,7 @@ pub async fn run_checks(
                 description: "The server uses a self-signed TLS certificate.".into(),
                 detail: format!("Subject: {:?}", tls.subject),
                 timestamp: chrono::Utc::now().to_rfc3339(),
+                risk_score: Finding::calc_risk_score(&Severity::Medium),
             });
         }
 
@@ -135,6 +138,7 @@ pub async fn run_checks(
                             description: "The TLS certificate has expired.".into(),
                             detail: format!("Expired on: {na}"),
                             timestamp: chrono::Utc::now().to_rfc3339(),
+                risk_score: Finding::calc_risk_score(&Severity::High),
                         });
                     } else if days_left < 30 {
                         findings.push(Finding {
@@ -143,6 +147,7 @@ pub async fn run_checks(
                             description: "The TLS certificate expires within 30 days.".into(),
                             detail: format!("Expires on: {na} ({days_left} days)"),
                             timestamp: chrono::Utc::now().to_rfc3339(),
+                risk_score: Finding::calc_risk_score(&Severity::Low),
                         });
                     }
                 }
