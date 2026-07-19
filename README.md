@@ -1,6 +1,6 @@
 # rvuln0-scan
 
-Fast Rust vulnerability scanner for remote services and sites.
+Rust vulnerability scanner for remote services and sites.
 
 ## Quick start
 
@@ -30,10 +30,14 @@ rvuln0 scan -l targets.txt -o report.json --format json --threads 50
 | ID | Severity | Description |
 |----|----------|-------------|
 | `missing-security-headers` | Medium | Missing X-Content-Type-Options / X-Frame-Options |
-| `info-disclosure` | Info | Server banner / version exposed |
-| `open-cors` | Medium | CORS allows all origins (*) |
+| `hsts-missing` | Low | Strict-Transport-Security not set |
+| `csp-missing` | Low | Content-Security-Policy not set |
+| `cors-wildcard` | Medium | CORS allows all origins (\*) |
+| `server-banner` | Info | Server header leaks software version |
+| `stack-trace` | High | Stack trace visible in response |
 | `directory-listing` | Medium | Directory listing enabled |
 | `exposed-admin` | High | Login/admin panel detected |
+| `php-info-exposed` | High | phpinfo() output detected |
 
 ## Project layout
 
@@ -44,7 +48,7 @@ src/
   types.rs        # core types
   error.rs        # error enum
   config.rs       # scan config builder
-  probe/          # HTTP probing + tech detection
+  probe/          # HTTP probing + tech detection + TLS
   check/          # vulnerability check engine + matchers
   ghost/          # evasion (UA rotation, jitter)
   report/         # output formatters (table, json, sarif)
